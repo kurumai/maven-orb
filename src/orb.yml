@@ -1,0 +1,56 @@
+version: 2.1
+
+description: |
+  maven utilities. 
+commands:
+  dependency:
+    parameters:
+      cache_key_prefix:
+        type: string
+        default: "maven"
+        description: "Key prefix of cache"
+      maven_path:
+        type: string
+        default: "~/.m2"
+        description: "maven path"
+      pom_file:
+        type: string
+        default: "pom.xml"
+        description: "pom file name"
+
+    steps:
+      - restore_cache:
+          keys:
+            - << parameters.cache_key_prefix >>-{{ .Environment.CIRCLE_JOB }}-{{ checksum "<< parameters.pom_file >>" }}-{{ .Branch }}
+            - << parameters.cache_key_prefix >>-{{ .Environment.CIRCLE_JOB }}-{{ checksum "<< parameters.pom_file >>" }}
+            - << parameters.cache_key_prefix >>-{{ .Environment.CIRCLE_JOB }}
+            - << parameters.cache_key_prefix >>
+
+      - run:
+          name: mvn dependency:go-offline
+          command: |
+            mvn dependency:go-offline
+
+      - save_cache:
+          key: << parameters.cache_key_prefix >>-{{ .Environment.CIRCLE_JOB }}-{{ checksum "<< parameters.pom_file >>" }}-{{ .Branch }}
+          paths:
+            - << parameters.maven_path >>
+  
+  test-with-parallelism:
+    parameters:
+      test_files:
+        type: string
+        default: "src/test/**/*.java"
+        description: "test files"
+      split_by:
+        type: enum
+        default: "timings"
+        description: "splitting algorithm"
+        enum: ["filesize", "timings"]
+
+    steps:
+      - run:
+        name: test
+        command: |
+          mvn test -Dtest=$(circleci tests glob "<< parameters.test_files >>" | circleci tests split --split-by=<< parameters.split_by >> | sed -E 's/^(.*\/)*//' | sed -z 's/\n/,/g')
+
