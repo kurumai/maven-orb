@@ -50,7 +50,7 @@ commands:
 
     steps:
       - run:
-        name: test
-        command: |
-          mvn test -Dtest=$(circleci tests glob "<< parameters.test_files >>" | circleci tests split --split-by=<< parameters.split_by >> | sed -E 's/^(.*\/)*//' | sed -z 's/\n/,/g')
+          name: test
+          command: |
+            mvn test -Dtest=$(circleci tests glob "<< parameters.test_files >>" | circleci tests split --split-by=<< parameters.split_by >> | sed -E 's/^(.*\/)*//' | sed -z 's/\n/,/g')
 
